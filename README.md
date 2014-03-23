@@ -1,4 +1,4 @@
-Dokku buildpack: Jekyll + Nginx
+Dokku buildpack: Static Nginx
 ================================
 
 For your static HTML site!
