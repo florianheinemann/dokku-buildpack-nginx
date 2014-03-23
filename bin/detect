@@ -1,0 +1,9 @@
+#!/bin/sh
+
+# this pack is valid for apps with _static in the root
+if [ -f $1/_static ]; then
+  echo "Static"
+  exit 0
+else
+  exit 1
+fi
