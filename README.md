@@ -1,11 +1,7 @@
 Dokku buildpack: Jekyll + Nginx
 ================================
 
-For your static blog!
+For your static HTML site!
 
-Simply use this as the Dokku buildpack for your Jekyll repo and push to your Dokku server!
+Simply use this as the Dokku buildpack for your static repo and push to your Dokku server!
 
-Credit where credit's due
-=========================
-
-Based from []
