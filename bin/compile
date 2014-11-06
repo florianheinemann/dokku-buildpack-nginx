@@ -47,7 +47,7 @@ if [[ ! -d "${ZLIB_TARBALL%.tar.gz}" ]]; then
 fi
 
 cd "nginx-${NGINX_VERSION}"
-if [[ ! -f "${BUILD_DIR}/nginx/nginx" ]]; then
+if [[ ! -f "${CACHE_DIR}/compile_cache/nginx" ]]; then
   echo "-----> compile static nginx"
   mkdir $BUILD_DIR/nginx
   ./configure \
@@ -93,11 +93,13 @@ if [[ ! -f "${BUILD_DIR}/nginx/nginx" ]]; then
 
   make && make install
 
-  cp -r $BUILD_DIR/nginx $CACHE_DIR/compile_cache/
+  rm -rf $CACHE_DIR/compile_cache && mkdir -p $CACHE_DIR/compile_cache/
+  cp -r $BUILD_DIR/nginx/* $CACHE_DIR/compile_cache/
 
 else
   echo "-----> reuse nginx from cache"
-  cp -r $CACHE_DIR/compile_cache/nginx $BUILD_DIR/ 
+  mkdir -p $BUILD_DIR/nginx
+  cp -r $CACHE_DIR/compile_cache/* $BUILD_DIR/nginx/
 fi
 
 cd $CUR_DIR
@@ -117,7 +119,6 @@ cp conf/mime.types $BUILD_DIR/nginx/mime.types
 # build a startup script
 cat <<EOF >"$BUILD_DIR/start_nginx"
 #!/usr/bin/env bash
-# ${BUILD_DIR}
 rm -f /app/nginx/nginx.conf
 erb /app/nginx/nginx.conf.erb > /app/nginx/nginx.conf
 exec nginx -p /app/nginx -c /app/nginx/nginx.conf
