@@ -35,7 +35,7 @@ echo "-----> Unpacking Nginx"
 tar -xvzf bin/nginx.tar.gz && rm -f bin/nginx.tar.gz
 
 echo "-----> Copy Nginx into the slug"
-cp "nginx" "$BUILD_DIR/"
+cp -r "nginx" "$BUILD_DIR/"
 
 # build nginx config unless overridden by user
 #if [ ! -f $BUILD_DIR/nginx/nginx.conf ] ; then
