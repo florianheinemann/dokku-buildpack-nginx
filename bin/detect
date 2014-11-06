@@ -1,8 +1,8 @@
-#!/bin/sh
+#!/usr/bin/env bash
+set -e
 
-# this pack is valid for apps with _static in the root
-if [ -f $1/_static ]; then
-  echo "Static"
+if [[ -f $1/.static ]]; then
+  echo ".static"
   exit 0
 else
   exit 1
