@@ -26,7 +26,7 @@ mv $BUILD_DIR/* $CACHE_DIR/www_cache
 mkdir -p $BUILD_DIR/www
 mv $CACHE_DIR/www_cache/* $BUILD_DIR/www
 
-cd $CACHEDIR
+cd $CACHE_DIR
 
 if [[ ! -d "${NGINX_TARBALL%.tar.gz}" ]]; then
   echo "-----> download and unzip nginx"
@@ -47,12 +47,12 @@ if [[ ! -d "${ZLIB_TARBALL%.tar.gz}" ]]; then
 fi
 
 cd "nginx-${NGINX_VERSION}"
-if [[ ! -f "${BUILDDIR}/nginx/nginx" ]]; then
+if [[ ! -f "${BUILD_DIR}/nginx/nginx" ]]; then
   echo "-----> compile static nginx"
-  mkdir $BUILDDIR/nginx
+  mkdir $BUILD_DIR/nginx
   ./configure \
     --with-cpu-opt=generic \
-    --prefix=$BUILDDIR/nginx \
+    --prefix=$BUILD_DIR/nginx \
     --with-pcre=../pcre-${PCRE_VERSION} \
     --sbin-path=. \
     --pid-path=./nginx.pid \
@@ -93,11 +93,11 @@ if [[ ! -f "${BUILDDIR}/nginx/nginx" ]]; then
 
   make && make install
 
-  cp -r $BUILDDIR/nginx $CACHEDIR/compile_cache/
+  cp -r $BUILD_DIR/nginx $CACHE_DIR/compile_cache/
 
 else
   echo "-----> reuse nginx from cache"
-  cp -r $CACHEDIR/compile_cache/nginx $BUILDDIR/ 
+  cp -r $CACHE_DIR/compile_cache/nginx $BUILD_DIR/ 
 fi
 
 cd $CUR_DIR
