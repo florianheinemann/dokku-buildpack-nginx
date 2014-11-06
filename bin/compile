@@ -28,22 +28,25 @@ function indent() {
   esac
 }
 
+echo "-----> cd to $LP_DIR"
+cd $LP_DIR
+
 echo "-----> Unpacking Nginx"
-tar -xvzf $LP_DIR/bin/nginx.tar.gz
+tar -xvzf nginx.tar.gz && rm -f nginx.tar.gz
 
 echo "-----> Copy Nginx into the slug"
-cp "$LP_DIR/nginx" "$BUILD_DIR/"
+cp "nginx" "$BUILD_DIR/"
 
 # build nginx config unless overridden by user
 #if [ ! -f $BUILD_DIR/nginx/nginx.conf ] ; then
 echo "-----> Using default nginx.conf.erb"
-cp $LP_DIR/conf/nginx.conf.erb $BUILD_DIR/nginx/nginx.conf.erb
+cp conf/nginx.conf.erb $BUILD_DIR/nginx/nginx.conf.erb
 #fi
 
 # build mime.types unless overridden by user
 #if [ ! -f $BUILD_DIR/mime.types ] ; then
 echo "-----> Using default mime.types"
-cp $LP_DIR/conf/mime.types $BUILD_DIR/nginx/mime.types
+cp conf/mime.types $BUILD_DIR/nginx/mime.types
 #fi
 
 # build a startup script
