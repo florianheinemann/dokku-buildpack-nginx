@@ -32,7 +32,7 @@ echo "-----> cd to $LP_DIR"
 cd $LP_DIR
 
 echo "-----> Unpacking Nginx"
-tar -xvzf nginx.tar.gz && rm -f nginx.tar.gz
+tar -xvzf bin/nginx.tar.gz && rm -f bin/nginx.tar.gz
 
 echo "-----> Copy Nginx into the slug"
 cp "nginx" "$BUILD_DIR/"
