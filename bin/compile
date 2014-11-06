@@ -52,10 +52,10 @@ cp conf/mime.types $BUILD_DIR/nginx/mime.types
 # build a startup script
 cat <<EOF >"$BUILD_DIR/start_nginx"
 #!/usr/bin/env bash
-rm -f nginx/nginx.conf
-erb nginx/nginx.conf.erb > nginx/nginx.conf
+rm -f /app/nginx/nginx.conf
+erb /app/nginx/nginx.conf.erb > /app/nginx/nginx.conf
 mkdir -p logs
-touch logs/access.log logs/error.log
+touch /app/logs/access.log /app/logs/error.log
 (tail -qF -n 0 --pid=\$\$ logs/*.log &)
 exec nginx
 EOF
