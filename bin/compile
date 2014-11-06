@@ -57,6 +57,6 @@ erb /app/nginx/nginx.conf.erb > /app/nginx/nginx.conf
 mkdir -p logs
 touch /app/logs/access.log /app/logs/error.log
 (tail -qF -n 0 --pid=\$\$ logs/*.log &)
-exec nginx
+exec nginx -p /app/nginx -c /app/nginx/nginx.conf
 EOF
 chmod +x "$BUILD_DIR/start_nginx"
