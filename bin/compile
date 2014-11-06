@@ -4,22 +4,21 @@
 set -e
 set -o pipefail
 
-# config
-NGINX_VERSION="1.0.14"
-S3_BUCKET="essh-heroku-buildpack-nginx"
+# Nginx 1.6.2
 
 # parse and derive params
 BUILD_DIR=$1
 CACHE_DIR=$2
 LP_DIR=`cd $(dirname $0); cd ..; pwd`
 
-# s3 packages
-NGINX_PACKAGE="http://${S3_BUCKET}.s3.amazonaws.com/nginx-${NGINX_VERSION}.tgz"
-
-# vendor directories
-VENDORED_NGINX=$(mktemp -d -t nginx.XXXXXX)
-
 mkdir -p $BUILD_DIR $CACHE_DIR
+
+echo "-----> Copy static files to www"
+rm -rf $CACHE_DIR/www_cache
+mkdir -p $CACHE_DIR/www_cache
+mv $BUILD_DIR/* $CACHE_DIR/www_cache
+mkdir -p $BUILD_DIR/www
+mv $CACHE_DIR/www_cache/* $BUILD_DIR/www
 
 function indent() {
   c='s/^/       /'
@@ -29,36 +28,32 @@ function indent() {
   esac
 }
 
-# download and upack packages
-echo "-----> Fetching nginx binaries"
-curl $NGINX_PACKAGE -s -o - | tar xzf - -C $VENDORED_NGINX
+echo "-----> Unpacking Nginx"
+tar -xvzf $LP_DIR/bin/nginx.tar.gz
 
-# vendor nginx into the slug
-echo "-----> Vendoring nginx $NGINX_VERSION"
-mkdir -p "$BUILD_DIR/bin"
-cp "$VENDORED_NGINX/sbin/nginx" "$BUILD_DIR/bin/nginx"
+echo "-----> Copy Nginx into the slug"
+cp "$LP_DIR/nginx" "$BUILD_DIR/"
 
 # build nginx config unless overridden by user
-if [ ! -f $BUILD_DIR/conf/nginx.conf ] ; then
-  echo "-----> Using default nginx.conf.erb"
-  mkdir -p $BUILD_DIR/conf
-	cp $LP_DIR/conf/nginx.conf.erb $BUILD_DIR/conf/nginx.conf.erb
-fi
+#if [ ! -f $BUILD_DIR/nginx/nginx.conf ] ; then
+echo "-----> Using default nginx.conf.erb"
+cp $LP_DIR/conf/nginx.conf.erb $BUILD_DIR/nginx/nginx.conf.erb
+#fi
 
 # build mime.types unless overridden by user
-if [ ! -f $BUILD_DIR/conf/mime.types ] ; then
-  echo "-----> Using default mime.types"
-  mkdir -p $BUILD_DIR/conf
-	cp $LP_DIR/conf/mime.types $BUILD_DIR/conf/mime.types
-fi
+#if [ ! -f $BUILD_DIR/mime.types ] ; then
+echo "-----> Using default mime.types"
+cp $LP_DIR/conf/mime.types $BUILD_DIR/nginx/mime.types
+#fi
 
 # build a startup script
-cat <<EOF >"$BUILD_DIR/bin/start_nginx"
+cat <<EOF >"$BUILD_DIR/start_nginx"
 #!/usr/bin/env bash
-erb conf/nginx.conf.erb > conf/nginx.conf
+rm -f nginx/nginx.conf
+erb nginx/nginx.conf.erb > nginx/nginx.conf
 mkdir -p logs
 touch logs/access.log logs/error.log
 (tail -qF -n 0 --pid=\$\$ logs/*.log &)
-exec bin/nginx -p .
+exec nginx
 EOF
-chmod +x "$BUILD_DIR/bin/start_nginx"
+chmod +x "$BUILD_DIR/start_nginx"
