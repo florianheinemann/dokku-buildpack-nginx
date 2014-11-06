@@ -5,53 +5,119 @@ set -e
 set -o pipefail
 
 # Nginx 1.6.2
+NGINX_VERSION="1.6.2"
+NGINX_TARBALL="nginx-${NGINX_VERSION}.tar.gz"
+PCRE_VERSION="8.34"
+PCRE_TARBALL="pcre-${PCRE_VERSION}.tar.gz"
+ZLIB_VERSION="1.2.8"
+ZLIB_TARBALL="zlib-${ZLIB_VERSION}.tar.gz"
 
 # parse and derive params
 BUILD_DIR=$1
 CACHE_DIR=$2
-LP_DIR=`cd $(dirname $0); cd ..; pwd`
+CUR_DIR=`cd $(dirname $0); cd ..; pwd`
 
 mkdir -p $BUILD_DIR $CACHE_DIR
 
-echo "-----> Copy static files to www"
+echo "-----> copy static files to www"
 rm -rf $CACHE_DIR/www_cache
 mkdir -p $CACHE_DIR/www_cache
 mv $BUILD_DIR/* $CACHE_DIR/www_cache
 mkdir -p $BUILD_DIR/www
 mv $CACHE_DIR/www_cache/* $BUILD_DIR/www
 
-function indent() {
-  c='s/^/       /'
-  case $(uname) in
-    Darwin) sed -l "$c";;
-    *)      sed -u "$c";;
-  esac
-}
+cd $CACHEDIR
 
-echo "-----> cd to $LP_DIR"
-cd $LP_DIR
+if [[ ! -d "${NGINX_TARBALL%.tar.gz}" ]]; then
+  echo "-----> download and unzip nginx"
+  curl "http://nginx.org/download/${NGINX_TARBALL}" -o "${NGINX_TARBALL}"
+  tar xvzf "${NGINX_TARBALL}" && rm -f "${NGINX_TARBALL}"
+fi
+ 
+if [[ ! -d "${PCRE_TARBALL%.tar.gz}" ]]; then
+  echo "-----> download and unzip pcre"
+  curl "http://ftp.csx.cam.ac.uk/pub/software/programming/pcre/${PCRE_TARBALL}" -o "${PCRE_TARBALL}"
+  tar xvzf "${PCRE_TARBALL}" && rm -f "${PCRE_TARBALL}"
+fi
+ 
+if [[ ! -d "${ZLIB_TARBALL%.tar.gz}" ]]; then
+  echo "-----> download and unzip zlib"
+  curl "http://zlib.net/${ZLIB_TARBALL}" -o "${ZLIB_TARBALL}"
+  tar xvzf "${ZLIB_TARBALL}" && rm -rf "${ZLIB_TARBALL}"
+fi
 
-echo "-----> Unpacking Nginx"
-tar -xvzf bin/nginx.tar.gz && rm -f bin/nginx.tar.gz
+cd "nginx-${NGINX_VERSION}"
+if [[ ! -f "${BUILDDIR}/nginx/nginx" ]]; then
+  echo "-----> compile static nginx"
+  mkdir $BUILDDIR/nginx
+  ./configure \
+    --with-cpu-opt=generic \
+    --prefix=$BUILDDIR/nginx \
+    --with-pcre=../pcre-${PCRE_VERSION} \
+    --sbin-path=. \
+    --pid-path=./nginx.pid \
+    --conf-path=./nginx.conf \
+    --with-ld-opt="-static" \
+    --with-http_spdy_module \
+    --with-http_stub_status_module \
+    --with-http_gzip_static_module \
+    --with-file-aio \
+    --with-zlib=../zlib-${ZLIB_VERSION} \
+    --with-pcre \
+    --with-cc-opt="-O2 -static -static-libgcc" \
+    --without-http_charset_module \
+    --without-http_ssi_module \
+    --without-http_userid_module \
+    --without-http_access_module \
+    --without-http_auth_basic_module \
+    --without-http_autoindex_module \
+    --without-http_geo_module \
+    --without-http_map_module \
+    --without-http_split_clients_module \
+    --without-http_referer_module \
+    --without-http_proxy_module \
+    --without-http_fastcgi_module \
+    --without-http_uwsgi_module \
+    --without-http_scgi_module \
+    --without-http_memcached_module \
+    --without-http_empty_gif_module \
+    --without-http_browser_module \
+    --without-http_upstream_ip_hash_module \
+    --without-http_upstream_least_conn_module \
+    --without-http_upstream_keepalive_module \
+    --without-mail_pop3_module \
+    --without-mail_imap_module \
+    --without-mail_smtp_module
+   
+  sed -i "/CFLAGS/s/ \-O //g" objs/Makefile
 
-echo "-----> Copy Nginx into the slug"
-cp -r "nginx" "$BUILD_DIR/"
+  make && make install
+
+  cp -r $BUILDDIR/nginx $CACHEDIR/compile_cache/
+
+else
+  echo "-----> reuse nginx from cache"
+  cp -r $CACHEDIR/compile_cache/nginx $BUILDDIR/ 
+fi
+
+cd $CUR_DIR
 
 # build nginx config unless overridden by user
 #if [ ! -f $BUILD_DIR/nginx/nginx.conf ] ; then
-echo "-----> Using default nginx.conf.erb"
+echo "-----> using default nginx.conf.erb"
 cp conf/nginx.conf.erb $BUILD_DIR/nginx/nginx.conf.erb
 #fi
 
 # build mime.types unless overridden by user
 #if [ ! -f $BUILD_DIR/mime.types ] ; then
-echo "-----> Using default mime.types"
+echo "-----> using default mime.types"
 cp conf/mime.types $BUILD_DIR/nginx/mime.types
 #fi
 
 # build a startup script
 cat <<EOF >"$BUILD_DIR/start_nginx"
 #!/usr/bin/env bash
+# ${BUILD_DIR}
 rm -f /app/nginx/nginx.conf
 erb /app/nginx/nginx.conf.erb > /app/nginx/nginx.conf
 exec nginx -p /app/nginx -c /app/nginx/nginx.conf
